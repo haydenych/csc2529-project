@@ -97,10 +97,10 @@ def main(args):
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
 
-    with open(os.path.join(args.output_dir, f"noise_total_{args.num_samples}.npy"), "wb") as f:
+    with open(os.path.join(args.output_dir, f"noise_total_{args.d}_{args.num_samples}.npy"), "wb") as f:
         np.save(f, noise_map_total)
 
-    with open(os.path.join(args.output_dir, f"noise_individual_{args.num_samples}.npy"), "wb") as f:
+    with open(os.path.join(args.output_dir, f"noise_individual_{args.d}_{args.num_samples}.npy"), "wb") as f:
         np.save(f, noise_map_individual)
 
 
