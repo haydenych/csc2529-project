@@ -18,6 +18,6 @@ class Logger:
         with open(self.filename, "r+") as f:
             f.truncate(0)
 
-    def log(self, msg):
+    def log(self, msg=""):
         with open(self.filename, "a") as f:
             f.write(msg + "\n")
