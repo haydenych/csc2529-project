@@ -3,7 +3,7 @@ import numpy as np
 import os
 
 from glob import glob
-from multiprocessing import Pool
+from multiprocessing import Pool, current_process
 from PIL import Image
 from tqdm import tqdm
 
@@ -33,7 +33,7 @@ def correlation(patch):
     return numer / denom
 
 
-def spatial_corr(x, d):
+def spatial_corr(x, d, p_bar_index):
     """
     Returns the spatial correlation with relative distance of d for a single image.
     """
@@ -45,17 +45,20 @@ def spatial_corr(x, d):
     for c in range(x.shape[2]):
         pad[:, :, c] = np.pad(x[:, :, c], d)
 
-    for i in range(x.shape[0]):
-        for j in range(x.shape[1]):
-            patch = pad[i:i+2*d+1, j:j+2*d+1, :]
+    with tqdm(total=x.shape[0]*x.shape[1], position=p_bar_index, leave=False) as p_bar:
+        for i in range(x.shape[0]):
+            for j in range(x.shape[1]):
+                patch = pad[i:i+2*d+1, j:j+2*d+1, :]
 
-            corr = correlation(patch)
+                corr = correlation(patch)
 
-            sum_ = np.nan_to_num(corr, copy=True)
-            cnt_ = np.where(np.isnan(corr), 0, 1)
+                sum_ = np.nan_to_num(corr, copy=True)
+                cnt_ = np.where(np.isnan(corr), 0, 1)
 
-            sum += sum_
-            cnt += cnt_
+                sum += sum_
+                cnt += cnt_
+
+                p_bar.update(1)
 
     return sum, cnt
 
@@ -68,12 +71,13 @@ def mp_func(args):
     d = args[2]
 
     x = np.array(Image.open(img_noise_path), dtype=np.int16) - np.array(Image.open(img_clean_path), dtype=np.int16)
-    return spatial_corr(x, d)
+    return spatial_corr(x, d, current_process()._identity[0])
 
 
 def main(args):
-    img_noise_path_list = glob(os.path.join(args.dataroot, "RN/*"))
-    img_clean_path_list = glob(os.path.join(args.dataroot, "CL/*"))
+    img_all = glob(os.path.join(args.dataroot, "*/*.PNG"), recursive=True)
+    img_noise_path_list = sorted([x for x in img_all if "NOISY" in x])
+    img_clean_path_list = sorted([x for x in img_all if "GT" in x])
 
     assert(len(img_noise_path_list) == len(img_clean_path_list))
     assert(len(img_noise_path_list) > 0)
@@ -83,7 +87,7 @@ def main(args):
 
     mp_args = zip(img_noise_path_list[:args.num_samples], img_clean_path_list[:args.num_samples], [args.d] * args.num_samples)
 
-    with Pool(processes=args.num_procs) as p:
+    with Pool(processes=args.num_procs, initializer=tqdm.set_lock, initargs=(tqdm.get_lock(),)) as p:
         res = list(tqdm(p.imap(mp_func, mp_args), total=args.num_samples))
     res = np.array(res)
 
@@ -107,14 +111,11 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--dataroot", type=str, default="../data/prep/SIDD_s512_o128")
-
-    parser.add_argument("--d", type=int, default=4)
-    parser.add_argument("--num-samples", type=int, default=1000, help="Number of samples to generate the noise map, use -1 for all")
-
-    parser.add_argument("--num-procs", type=int, default=24)
-
-    parser.add_argument("--output-dir", type=str, default="./output")
+    parser.add_argument("-f", "--dataroot", type=str, default="../../data/SIDD/SIDD_Medium_Srgb/Data")
+    parser.add_argument("-o", "--output-dir", type=str, default="./output")
+    parser.add_argument("-n", "--num-samples", type=int, default=-1, help="Number of samples to generate the noise map, use -1 for all")
+    parser.add_argument("-d", "--d", type=int, default=10)
+    parser.add_argument("-p", "--num-procs", type=int, default=24)
 
     args = parser.parse_args()
     main(args)
