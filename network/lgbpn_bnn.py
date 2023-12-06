@@ -6,7 +6,7 @@ from PIL import Image
 import numpy as np
 import math
 import torch.nn.parallel as P
-from models.restormer_arch import DTB
+from network.restormer_arch import DTB
 
 
 

@@ -1,6 +1,6 @@
 from dataset.SIDD import SIDDSrgbTrainDataset, SIDDSrgbValidationDataset
 from logger import Logger
-from network.ssid_bnn import SSID_BNN as BNN
+from network.lgbpn_bnn import LGBPN_BNN as BNN
 
 import json
 import numpy as np
@@ -12,11 +12,11 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from skimage.metrics import peak_signal_noise_ratio
 
-class SSID_BNN():
+class LGBPN_BNN():
     def __init__(self, cfg_path):
         cfg = {
             "dataroot": "../data",              # Path to data
-            "logs_dir": "./logs/SSID_BNN",      # Path to logs
+            "logs_dir": "./logs/LGBPN_BNN",      # Path to logs
             "output_dir": "./output",           # Path to ckpt outputs
             "load_from_ckpt": "",               # Path to ckpt to load from
 
@@ -36,7 +36,7 @@ class SSID_BNN():
         }
 
         self.logger = Logger(cfg["logs_dir"], disable=not cfg["use_logs"])
-        self.logger.log("Initializing SSID BNN")
+        self.logger.log("Initializing LGBPN BNN")
         self.logger.log("")
         self.logger.log("Arguments:")
 
@@ -61,7 +61,7 @@ class SSID_BNN():
             self.load_dataset(cfg["dataroot"], cfg["patch_size"])
 
         self.device = torch.device(f"cuda:{cfg['gpu']}" if cfg["gpu"] != -1 else "cpu")
-        self.model = BNN(blindspot=9).to(self.device)
+        self.model = BNN(head_ch=24).to(self.device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
         self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=self.n_epochs)
         self.loss_fn = nn.L1Loss(reduction="mean")
@@ -148,6 +148,7 @@ class SSID_BNN():
 
                 if (epoch+1) % self.validate_every == 0:
                     _ = self.validate(log_psnr=True)
+
 
                 if (epoch+1) % self.save_every == 0:
                     self.curr_epoch = epoch
