@@ -73,6 +73,10 @@ class LGBPN_BNN():
         self.logger.log(str(model_summary))
         self.logger.log("")
 
+        self.print_every = cfg["print_every"]
+        self.validate_every = cfg["validate_every"]
+        self.save_every = cfg["save_every"]
+
     def load_dataset(self, dataroot, patch_size):
         self.logger.log("Loading Training Dataset...")
         self.logger.log("")
@@ -148,7 +152,6 @@ class LGBPN_BNN():
 
                 if (epoch+1) % self.validate_every == 0:
                     _ = self.validate(log_psnr=True)
-
 
                 if (epoch+1) % self.save_every == 0:
                     self.curr_epoch = epoch
