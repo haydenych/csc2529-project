@@ -35,6 +35,8 @@ class SSID_BNN():
             "init_dataset": True                # Whether to initialize the datasets, set this to false if you only need inference
         }
 
+        self.output_dir = cfg["output_dir"]
+
         self.logger = Logger(cfg["logs_dir"], disable=not cfg["use_logs"])
         self.logger.log("Initializing SSID BNN")
         self.logger.log("")
@@ -151,7 +153,7 @@ class SSID_BNN():
                     self.logger.log("Epoch {:04d}/{:04d}".format(epoch+1, self.n_epochs) + f"\tLoss {round(loss.item(), 6)}")
 
                 if (epoch+1) % self.validate_every == 0:
-                    _ = self.validate(log_psnr=True)
+                    _ = self.validate(log_psnr=True, verbose=False)
 
                 if (epoch+1) % self.save_every == 0:
                     self.curr_epoch = epoch
@@ -205,12 +207,12 @@ class SSID_BNN():
 
         return imgs_out
 
-    def validate(self, log_psnr=False):
+    def validate(self, log_psnr=True, verbose=True):
         psnrs, count = 0, 0
 
         self.model.eval()
         with torch.no_grad():
-            for img_noisy, img_gt in tqdm(self.val_dataloader, desc="Validating..."):
+            for img_noisy, img_gt in tqdm(self.val_dataloader, desc="Validating...", disable=not verbose):
                 img_noisy = img_noisy.to(self.device)
 
                 img_out = self.model(img_noisy)

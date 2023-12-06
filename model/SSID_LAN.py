@@ -37,6 +37,8 @@ class SSID_LAN():
 
         self.BNN = BNN
 
+        self.output_dir = cfg["output_dir"]
+
         self.logger = Logger(cfg["logs_dir"], disable=not cfg["use_logs"])
         self.logger.log("Initializing SSID LAN")
         self.logger.log("")
@@ -139,12 +141,13 @@ class SSID_LAN():
 
                 for img_noisy, _ in self.train_dataloader:
                     img_noisy = img_noisy.to(self.device)
-                    img_bnn = self.BNN.inference(img_noisy, is_HWC=False, verbose=False)
-                    img_bnn = torch.from_numpy(img_bnn).permute(0, 3, 1, 2).to(self.device)
+                    # img_bnn = self.BNN.inference(img_noisy, is_HWC=False, verbose=False)
+                    # img_bnn = torch.from_numpy(img_bnn).permute(0, 3, 1, 2).to(self.device)
 
                     LAN = self.model(img_noisy)
 
-                    loss = self.loss_fn(LAN, img_bnn)
+                    # loss = self.loss_fn(LAN, img_bnn)
+                    loss = self.loss_fn(LAN, img_noisy)
 
                     self.optimizer.zero_grad()
                     loss.backward()
@@ -157,7 +160,7 @@ class SSID_LAN():
                     self.logger.log("Epoch {:04d}/{:04d}".format(epoch+1, self.n_epochs) + f"\tLoss {round(loss.item(), 6)}")
 
                 if (epoch+1) % self.validate_every == 0:
-                    _ = self.validate(log_psnr=True)
+                    _ = self.validate(log_psnr=True, verbose=False)
 
                 if (epoch+1) % self.save_every == 0:
                     self.curr_epoch = epoch
@@ -207,12 +210,12 @@ class SSID_LAN():
 
         return imgs_out
 
-    def validate(self, log_psnr=False):
+    def validate(self, log_psnr=True, verbose=True):
         psnrs, count = 0, 0
 
         self.model.eval()
         with torch.no_grad():
-            for img_noisy, img_gt in tqdm(self.val_dataloader, desc="Validating..."):
+            for img_noisy, img_gt in tqdm(self.val_dataloader, desc="Validating...", disable=not verbose):
                 img_noisy = img_noisy.to(self.device)
 
                 img_out = self.model(img_noisy)
