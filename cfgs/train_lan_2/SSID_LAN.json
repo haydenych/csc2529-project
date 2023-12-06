@@ -1,0 +1,4 @@
+{
+    "dataroot": "../data",
+    "n_epochs": 1000
+}

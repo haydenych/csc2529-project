@@ -1,0 +1,6 @@
+{
+    "dataroot": "../data",
+    "load_from_ckpt": "../SpatiallyAdaptiveSSID/pretrained_models/BNN.pth",
+    "use_logs": false,
+    "init_dataset": false
+}
