@@ -5,7 +5,6 @@ We observe slightly better performance with training inputs in [0, 255] range th
 so we follow AP-BSN that do not normalize the input image from [0, 255] to [0, 1].
 """
 
-
 import glob
 import numpy as np
 import os
@@ -14,8 +13,6 @@ import scipy
 
 from PIL import Image
 from torch.utils.data import Dataset
-from torchvision import transforms
-
 
 def aug_np3(img, flip_h, flip_w, transpose):
     if flip_h:
@@ -38,12 +35,18 @@ class SIDDSrgbTrainDataset(Dataset):
 
         noisy_img_paths = sorted(glob.glob(os.path.join(dataroot, "SIDD/SIDD_Medium_Srgb/Data/*/*_NOISY_SRGB_*.PNG")))
         for noisy_img_path in noisy_img_paths:
+            img_noisy = Image.open(noisy_img_path)
+            img_gt = Image.open(noisy_img_path.replace("NOISY", "GT"))
+
             self.imgs.append(
                 {
-                    "NOISY": Image.open(noisy_img_path),
-                    "GT": Image.open(noisy_img_path.replace("NOISY", "GT"))
+                    "NOISY": np.array(img_noisy),
+                    "GT": np.array(img_gt)
                 }
             )
+
+            img_noisy.close()
+            img_gt.close()
 
         self.patch_size = patch_size
 
