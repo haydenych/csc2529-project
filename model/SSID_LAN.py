@@ -141,13 +141,13 @@ class SSID_LAN():
 
                 for img_noisy, _ in self.train_dataloader:
                     img_noisy = img_noisy.to(self.device)
-                    # img_bnn = self.BNN.inference(img_noisy, is_HWC=False, verbose=False)
-                    # img_bnn = torch.from_numpy(img_bnn).permute(0, 3, 1, 2).to(self.device)
+                    img_bnn = self.BNN.inference(img_noisy, is_HWC=False, verbose=False)
+                    img_bnn = torch.from_numpy(img_bnn).permute(0, 3, 1, 2).to(self.device)
 
                     LAN = self.model(img_noisy)
 
-                    # loss = self.loss_fn(LAN, img_bnn)
-                    loss = self.loss_fn(LAN, img_noisy)
+                    loss = self.loss_fn(LAN, img_bnn)
+                    # loss = self.loss_fn(LAN, img_noisy)
 
                     self.optimizer.zero_grad()
                     loss.backward()
