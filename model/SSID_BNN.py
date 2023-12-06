@@ -203,7 +203,7 @@ class SSID_BNN():
                 img_out = self.model(img_noisy)
                 img_out = img_out.cpu().squeeze(0).permute(1, 2, 0).numpy()
 
-            imgs_out[i, ...] = img_out
+                imgs_out[i, ...] = img_out
 
         return imgs_out
 
