@@ -17,7 +17,7 @@ class SSID_LAN():
         cfg = {
             "dataroot": "../data",              # Path to data
             "logs_dir": "./logs/SSID_LAN",      # Path to logs
-            "output_dir": "./output",           # Path to ckpt outputs
+            "output_dir": "./output/SSID_LAN",  # Path to ckpt outputs
             "load_from_ckpt": "",               # Path to ckpt to load from
 
             "patch_size": 256,                  # Image Crop Size

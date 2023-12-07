@@ -43,8 +43,8 @@ class SSID_UNet():
     def __init__(self, cfg_path, BNN, LAN):
         cfg = {
             "dataroot": "../data",              # Path to data
-            "logs_dir": "./logs/SSID_UNet",      # Path to logs
-            "output_dir": "./output",           # Path to ckpt outputs
+            "logs_dir": "./logs/SSID_UNet",     # Path to logs
+            "output_dir": "./output/SSID_UNet", # Path to ckpt outputs
             "load_from_ckpt": "",               # Path to ckpt to load from
 
             "patch_size": 256,                  # Image Crop Size

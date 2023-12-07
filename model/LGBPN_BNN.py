@@ -16,8 +16,8 @@ class LGBPN_BNN():
     def __init__(self, cfg_path):
         cfg = {
             "dataroot": "../data",              # Path to data
-            "logs_dir": "./logs/LGBPN_BNN",      # Path to logs
-            "output_dir": "./output",           # Path to ckpt outputs
+            "logs_dir": "./logs/LGBPN_BNN",     # Path to logs
+            "output_dir": "./output/LGBPN_BNN", # Path to ckpt outputs
             "load_from_ckpt": "",               # Path to ckpt to load from
 
             "patch_size": 256,                  # Image Crop Size
