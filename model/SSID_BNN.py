@@ -23,7 +23,7 @@ class SSID_BNN():
             "patch_size": 256,                  # Image Crop Size
 
             "gpu": 0,            
-            "batch_size": 4,
+            "batch_size": 8,
             "lr": 3e-4,
             "n_epochs": 1000,
 

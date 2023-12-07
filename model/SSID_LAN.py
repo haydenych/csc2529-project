@@ -23,7 +23,7 @@ class SSID_LAN():
             "patch_size": 256,                  # Image Crop Size
 
             "gpu": 0,            
-            "batch_size": 16,
+            "batch_size": 8,
             "lr": 3e-4,
             "n_epochs": 1000,
 
