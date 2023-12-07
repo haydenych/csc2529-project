@@ -213,7 +213,9 @@ class SSID_UNet():
         if len(imgs.shape) == 3:
             imgs = np.array([imgs])
 
-        imgs_out = np.zeros_like(imgs)
+        imgs_out = np.zeros(imgs.shape)
+        if not is_HWC:
+            imgs_out = np.transpose(imgs_out, (0, 2, 3, 1))
 
         self.model.eval()
         with torch.no_grad():
