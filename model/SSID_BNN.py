@@ -110,7 +110,7 @@ class SSID_BNN():
             self.start_epoch = ckpt["epoch"]
             self.model.load_state_dict(ckpt["model"])
             self.optimizer.load_state_dict(ckpt["optimizer"])
-            self.scheduler.load_state_dict(ckpt["scheuduler"])
+            self.scheduler.load_state_dict(ckpt["scheduler"])
 
             self.logger.log("Loaded model from checkpoints")
             self.logger.log("Loaded optimizer from checkpoints")
