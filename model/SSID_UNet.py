@@ -1,6 +1,6 @@
 from dataset.SIDD import SIDDSrgbTrainDataset, SIDDSrgbValidationDataset
 from logger import Logger
-from network.lgbpn_bnn import LGBPN_BNN as BNN
+from network.unet import UNet
 
 import json
 import numpy as np
@@ -12,18 +12,45 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from skimage.metrics import peak_signal_noise_ratio
 
-class LGBPN_BNN():
-    def __init__(self, cfg_path):
+def std(img, window_size=7):
+    assert window_size % 2 == 1
+    pad = window_size // 2
+
+    # calculate std on the mean image of the color channels
+    img = torch.mean(img, dim=1, keepdim=True)
+    N, C, H, W = img.shape
+    img = nn.functional.pad(img, [pad] * 4, mode='reflect')
+    img = nn.functional.unfold(img, kernel_size=window_size)
+    img = img.view(N, C, window_size * window_size, H, W)
+    img = img - torch.mean(img, dim=2, keepdim=True)
+    img = img * img
+    img = torch.mean(img, dim=2, keepdim=True)
+    img = torch.sqrt(img)
+    img = img.squeeze(2)
+    return img
+
+def generate_alpha(input, lower=1, upper=5):
+    N, C, H, W = input.shape
+    ratio = input.new_ones((N, 1, H, W)) * 0.5
+    input_std = std(input)
+    ratio[input_std < lower] = torch.sigmoid((input_std - lower))[input_std < lower]
+    ratio[input_std > upper] = torch.sigmoid((input_std - upper))[input_std > upper]
+    ratio = ratio.detach()
+
+    return ratio
+
+class SSID_UNet():
+    def __init__(self, cfg_path, BNN, LAN):
         cfg = {
             "dataroot": "../data",              # Path to data
-            "logs_dir": "./logs/LGBPN_BNN",      # Path to logs
+            "logs_dir": "./logs/SSID_UNet",      # Path to logs
             "output_dir": "./output",           # Path to ckpt outputs
             "load_from_ckpt": "",               # Path to ckpt to load from
 
             "patch_size": 256,                  # Image Crop Size
 
             "gpu": 0,            
-            "batch_size": 4,
+            "batch_size": 16,
             "lr": 3e-4,
             "n_epochs": 1000,
 
@@ -35,10 +62,13 @@ class LGBPN_BNN():
             "init_dataset": True                # Whether to initialize the datasets, set this to false if you only need inference
         }
 
+        self.BNN = BNN
+        self.LAN = LAN
+
         self.output_dir = cfg["output_dir"]
 
         self.logger = Logger(cfg["logs_dir"], disable=not cfg["use_logs"])
-        self.logger.log("Initializing LGBPN BNN")
+        self.logger.log("Initializing SSID UNet")
         self.logger.log("")
         self.logger.log("Arguments:")
 
@@ -63,7 +93,7 @@ class LGBPN_BNN():
             self.load_dataset(cfg["dataroot"], cfg["patch_size"])
 
         self.device = torch.device(f"cuda:{cfg['gpu']}" if cfg["gpu"] != -1 else "cpu")
-        self.model = BNN(head_ch=24).to(self.device)
+        self.model = UNet().to(self.device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
         self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=self.n_epochs)
         self.loss_fn = nn.L1Loss(reduction="mean")
@@ -139,8 +169,18 @@ class LGBPN_BNN():
 
                 for img_noisy, _ in self.train_dataloader:
                     img_noisy = img_noisy.to(self.device)
-                    BNN = self.model(img_noisy)
-                    loss = self.loss_fn(BNN, img_noisy)
+                    
+                    img_bnn = self.BNN.inference(img_noisy, is_HWC=False, verbose=False)
+                    img_bnn = torch.from_numpy(img_bnn).permute(0, 3, 1, 2).to(self.device)
+
+                    img_lan = self.LAN.inference(img_noisy, is_HWC=False, verbose=False)
+                    img_lan = torch.from_numpy(img_lan).permute(0, 3, 1, 2).to(self.device)
+
+                    UNet = self.model(img_noisy)
+
+                    alpha = generate_alpha(img_bnn)
+
+                    loss = self.loss_fn(UNet * (1 - alpha), img_bnn * (1 - alpha)) + self.loss_fn(UNet * (1 - alpha), img_lan * (1 - alpha))
 
                     self.optimizer.zero_grad()
                     loss.backward()
@@ -173,9 +213,7 @@ class LGBPN_BNN():
         if len(imgs.shape) == 3:
             imgs = np.array([imgs])
 
-        imgs_out = np.zeros(imgs.shape)
-        if not is_HWC:
-            imgs_out = np.transpose(imgs_out, (0, 2, 3, 1))
+        imgs_out = np.zeros_like(imgs)
 
         self.model.eval()
         with torch.no_grad():

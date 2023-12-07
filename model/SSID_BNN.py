@@ -217,6 +217,7 @@ class SSID_BNN():
 
                 img_out = self.model(img_noisy)
                 img_out = img_out.cpu().squeeze(0).permute(1, 2, 0).numpy()
+                img_out = np.uint8(img_out)
 
                 img_gt = img_gt.squeeze(0).permute(1, 2, 0).numpy()
 
@@ -276,6 +277,7 @@ class SSID_BNN():
                 # Inference
                 img_out = self.model(img_noisy)
                 img_out = img_out.cpu().squeeze(0).permute(1, 2, 0).numpy()
+                img_out = np.uint8(img_out)
 
                 # Clean Ground Truth Image
                 if isinstance(img_gt, np.ndarray):

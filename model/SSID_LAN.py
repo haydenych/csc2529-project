@@ -185,6 +185,8 @@ class SSID_LAN():
         self.model.eval()
         with torch.no_grad():
             for i in tqdm(range(imgs.shape[0]), desc="Inferencing...", disable=not verbose):
+                img_noisy = imgs[i, ...]
+
                 # Clean Noisy Image
                 if isinstance(img_noisy, np.ndarray):
                     # Numpy Array
@@ -220,6 +222,7 @@ class SSID_LAN():
 
                 img_out = self.model(img_noisy)
                 img_out = img_out.cpu().squeeze(0).permute(1, 2, 0).numpy()
+                img_out = np.uint8(img_out)
 
                 img_gt = img_gt.squeeze(0).permute(1, 2, 0).numpy()
 
@@ -279,6 +282,7 @@ class SSID_LAN():
                 # Inference
                 img_out = self.model(img_noisy)
                 img_out = img_out.cpu().squeeze(0).permute(1, 2, 0).numpy()
+                img_out = np.uint8(img_out)
 
                 # Clean Ground Truth Image
                 if isinstance(img_gt, np.ndarray):
