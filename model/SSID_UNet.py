@@ -62,6 +62,13 @@ class SSID_UNet():
             "init_dataset": True                # Whether to initialize the datasets, set this to false if you only need inference
         }
 
+        with open(cfg_path, "r") as f:
+            user_cfg = json.load(f)
+
+            for k, v in user_cfg.items():
+                assert k in cfg, f"Unknown key {k} in config file"
+                cfg[k] = v
+
         self.BNN = BNN
         self.LAN = LAN
 
@@ -71,13 +78,6 @@ class SSID_UNet():
         self.logger.log("Initializing SSID UNet")
         self.logger.log("")
         self.logger.log("Arguments:")
-
-        with open(cfg_path, "r") as f:
-            user_cfg = json.load(f)
-
-            for k, v in user_cfg.items():
-                assert k in cfg, f"Unknown key {k} in config file"
-                cfg[k] = v
 
         for k, v in cfg.items():
             self.logger.log("{0:<25}  {1}".format(k, v))

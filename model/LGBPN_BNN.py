@@ -35,19 +35,19 @@ class LGBPN_BNN():
             "init_dataset": True                # Whether to initialize the datasets, set this to false if you only need inference
         }
 
-        self.output_dir = cfg["output_dir"]
-
-        self.logger = Logger(cfg["logs_dir"], disable=not cfg["use_logs"])
-        self.logger.log("Initializing LGBPN BNN")
-        self.logger.log("")
-        self.logger.log("Arguments:")
-
         with open(cfg_path, "r") as f:
             user_cfg = json.load(f)
 
             for k, v in user_cfg.items():
                 assert k in cfg, f"Unknown key {k} in config file"
                 cfg[k] = v
+
+        self.output_dir = cfg["output_dir"]
+
+        self.logger = Logger(cfg["logs_dir"], disable=not cfg["use_logs"])
+        self.logger.log("Initializing LGBPN BNN")
+        self.logger.log("")
+        self.logger.log("Arguments:")
 
         for k, v in cfg.items():
             self.logger.log("{0:<25}  {1}".format(k, v))

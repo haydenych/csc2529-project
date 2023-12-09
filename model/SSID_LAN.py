@@ -35,6 +35,13 @@ class SSID_LAN():
             "init_dataset": True                # Whether to initialize the datasets, set this to false if you only need inference
         }
 
+        with open(cfg_path, "r") as f:
+            user_cfg = json.load(f)
+
+            for k, v in user_cfg.items():
+                assert k in cfg, f"Unknown key {k} in config file"
+                cfg[k] = v
+
         self.BNN = BNN
 
         self.output_dir = cfg["output_dir"]
@@ -43,13 +50,6 @@ class SSID_LAN():
         self.logger.log("Initializing SSID LAN")
         self.logger.log("")
         self.logger.log("Arguments:")
-
-        with open(cfg_path, "r") as f:
-            user_cfg = json.load(f)
-
-            for k, v in user_cfg.items():
-                assert k in cfg, f"Unknown key {k} in config file"
-                cfg[k] = v
 
         for k, v in cfg.items():
             self.logger.log("{0:<25}  {1}".format(k, v))
@@ -141,13 +141,13 @@ class SSID_LAN():
 
                 for img_noisy, _ in self.train_dataloader:
                     img_noisy = img_noisy.to(self.device)
-                    img_bnn = self.BNN.inference(img_noisy, is_HWC=False, verbose=False)
-                    img_bnn = torch.from_numpy(img_bnn).permute(0, 3, 1, 2).to(self.device)
+                    # img_bnn = self.BNN.inference(img_noisy, is_HWC=False, verbose=False)
+                    # img_bnn = torch.from_numpy(img_bnn).permute(0, 3, 1, 2).to(self.device)
 
                     LAN = self.model(img_noisy)
 
-                    loss = self.loss_fn(LAN, img_bnn)
-                    # loss = self.loss_fn(LAN, img_noisy)
+                    # loss = self.loss_fn(LAN, img_bnn)
+                    loss = self.loss_fn(LAN, img_noisy)
 
                     self.optimizer.zero_grad()
                     loss.backward()
