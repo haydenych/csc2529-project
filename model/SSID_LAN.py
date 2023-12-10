@@ -10,7 +10,7 @@ import torch.nn as nn
 from torchsummary import summary
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from skimage.metrics import peak_signal_noise_ratio
+from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 
 class SSID_LAN():
     def __init__(self, cfg_path, BNN):
@@ -141,13 +141,13 @@ class SSID_LAN():
 
                 for img_noisy, _ in self.train_dataloader:
                     img_noisy = img_noisy.to(self.device)
-                    # img_bnn = self.BNN.inference(img_noisy, is_HWC=False, verbose=False)
-                    # img_bnn = torch.from_numpy(img_bnn).permute(0, 3, 1, 2).to(self.device)
+                    img_bnn = self.BNN.inference(img_noisy, is_HWC=False, verbose=False)
+                    img_bnn = torch.from_numpy(img_bnn).permute(0, 3, 1, 2).to(self.device)
 
                     LAN = self.model(img_noisy)
 
-                    # loss = self.loss_fn(LAN, img_bnn)
-                    loss = self.loss_fn(LAN, img_noisy)
+                    loss = self.loss_fn(LAN, img_bnn)
+                    # loss = self.loss_fn(LAN, img_noisy)
 
                     self.optimizer.zero_grad()
                     loss.backward()
@@ -160,7 +160,7 @@ class SSID_LAN():
                     self.logger.log("Epoch {:04d}/{:04d}".format(epoch+1, self.n_epochs) + f"\tLoss {round(loss.item(), 6)}")
 
                 if (epoch+1) % self.validate_every == 0:
-                    _ = self.validate(log_psnr=True, verbose=False)
+                    _, _ = self.validate(log_psnr=True, verbose=False)
 
                 if (epoch+1) % self.save_every == 0:
                     self.curr_epoch = epoch
@@ -214,8 +214,8 @@ class SSID_LAN():
 
         return imgs_out
 
-    def validate(self, log_psnr=True, verbose=True):
-        psnrs, count = 0, 0
+    def validate(self, use_log=True, verbose=True):
+        psnrs, ssims, count = 0, 0, 0
 
         self.model.eval()
         with torch.no_grad():
@@ -230,14 +230,19 @@ class SSID_LAN():
 
                 psnr = peak_signal_noise_ratio(img_out, img_gt, data_range=255)
                 psnrs += psnr
+
+                ssim = structural_similarity(img_out, img_gt, data_range=255, channel_axis=2)
+                ssims += ssim
+
                 count += 1
 
-        if log_psnr:
+        if use_log:
             self.logger.log("")
             self.logger.log(f"PSNR {round(psnrs / count, 6)}")
+            self.logger.log(f"SSIM {round(ssims / count, 6)}")
             self.logger.log("")
 
-        return psnrs / count
+        return psnrs / count, ssims / count
     
     def validate_custom(self, imgs, imgs_gt, is_HWC=True):
         assert len(imgs.shape) == 3 or len(imgs.shape == 4), f"Invalid Noisy Image Shape {imgs.shape}"

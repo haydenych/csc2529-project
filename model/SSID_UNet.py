@@ -10,7 +10,7 @@ import torch.nn as nn
 from torchsummary import summary
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from skimage.metrics import peak_signal_noise_ratio
+from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 
 def std(img, window_size=7):
     assert window_size % 2 == 1
@@ -193,7 +193,7 @@ class SSID_UNet():
                     self.logger.log("Epoch {:04d}/{:04d}".format(epoch+1, self.n_epochs) + f"\tLoss {round(loss.item(), 6)}")
 
                 if (epoch+1) % self.validate_every == 0:
-                    _ = self.validate(log_psnr=True, verbose=False)
+                    _, _ = self.validate(use_log=True, verbose=False)
 
                 if (epoch+1) % self.save_every == 0:
                     self.curr_epoch = epoch
@@ -247,8 +247,8 @@ class SSID_UNet():
 
         return imgs_out
 
-    def validate(self, log_psnr=True, verbose=True):
-        psnrs, count = 0, 0
+    def validate(self, use_log=True, verbose=True):
+        psnrs, ssims, count = 0, 0, 0
 
         self.model.eval()
         with torch.no_grad():
@@ -263,14 +263,19 @@ class SSID_UNet():
 
                 psnr = peak_signal_noise_ratio(img_out, img_gt, data_range=255)
                 psnrs += psnr
+
+                ssim = structural_similarity(img_out, img_gt, data_range=255, channel_axis=2)
+                ssims += ssim
+
                 count += 1
 
-        if log_psnr:
+        if use_log:
             self.logger.log("")
             self.logger.log(f"PSNR {round(psnrs / count, 6)}")
+            self.logger.log(f"SSIM {round(ssims / count, 6)}")
             self.logger.log("")
 
-        return psnrs / count
+        return psnrs / count, ssims / count
     
     def validate_custom(self, imgs, imgs_gt, is_HWC=True):
         assert len(imgs.shape) == 3 or len(imgs.shape == 4), f"Invalid Noisy Image Shape {imgs.shape}"
